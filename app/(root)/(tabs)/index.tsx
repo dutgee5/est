@@ -10,12 +10,11 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-
+      <Text className="font-bold text-lg my-10">Welcome to Estate</Text>
       <Link href={"/sign-in"}>Sign</Link>
       <Link href={"/explore"}>explore</Link>
       <Link href={"/profile"}>profile</Link>
       <Link href={"./properties/1"}>Property</Link>
-
     </View>
   );
 }
