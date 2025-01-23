@@ -3,7 +3,7 @@ import * as Linking from "expo-linking";
 import { openAuthSessionAsync } from "expo-web-browser";
 
 export const config = {
-  platgorm: "com.est",
+  platform: "com.est",
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
 };
@@ -13,7 +13,7 @@ export const client = new Client();
 client
   .setEndpoint(config.endpoint!)
   .setProject(config.projectId!)
-  .setPlatform(config.platgorm!);
+  .setPlatform(config.platform!);
 
 export const avatar = new Avatars(client);
 export const account = new Account(client);
@@ -34,7 +34,7 @@ export async function login() {
       redirectUrl
     );
 
-    if (browserResult.type !== "success") throw new Error("Failed to login");
+    if (browserResult.type !== "success") throw new Error("no success");
 
     const url = new URL(browserResult.url);
 
@@ -46,16 +46,21 @@ export async function login() {
     const session = await account.createSession(userId, secret);
 
     if (!session) throw new Error("Failed to create session");
+
+    return true;
   } catch (error) {
     console.error(error);
+    return false;
   }
 }
 
 export async function logout() {
   try {
-    await account.deleteSession("current");
+    const result = await account.deleteSession("current");
+    return result;
   } catch (error) {
     console.error(error);
+    return false;
   }
 }
 
@@ -70,7 +75,9 @@ export async function getCurrentUser() {
         avatar: userAvatar.toString(),
       };
     }
+    return null;
   } catch (error) {
     console.error(error);
+    return null;
   }
 }
