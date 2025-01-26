@@ -1,23 +1,74 @@
 import { Card, FeaturedCards } from "@/components/Cards";
 import Filters from "@/components/Filters";
+import NoResults from "@/components/NoResults";
 import Search from "@/components/Search";
 import icons from "@/constants/icons";
+import { getLatestProperties, getProperties } from "@/lib/appwrite";
 import { useGlobalContext } from "@/lib/global-provider";
-import { Text, View, Image, TouchableOpacity, FlatList } from "react-native";
+import { useAppwrite } from "@/lib/useAppwrite";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
+import {
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index() {
   const { user } = useGlobalContext();
+  const params = useLocalSearchParams<{ query?: string; filter?: string }>();
+
+  const { data: latestProperties, loading: latestPropertiesLoading } =
+    useAppwrite({
+      fn: getLatestProperties,
+    });
+
+  const {
+    data: properties,
+    loading,
+    refetch,
+  } = useAppwrite({
+    fn: getProperties,
+    params: {
+      filter: params.filter,
+      query: params.query,
+      limit: 6,
+    },
+    skip: true,
+  });
+
+  const handleCardPress = (id: string) => router.push(`/properties/${id}`);
+
+  useEffect(() => {
+    refetch({
+      filter: params.filter!,
+      query: params.query!,
+      limit: 6,
+    });
+  }, [params.filter, params.query]);
   return (
     <SafeAreaView className="bg-white h-full">
       <FlatList
-        data={[1, 2]}
-        renderItem={({ item }) => <Card onPress={() => {}} />}
+        data={properties}
+        renderItem={({ item }) => (
+          <Card item={item} onPress={() => handleCardPress(item.$id)} />
+        )}
         keyExtractor={(item) => item.toString()}
         numColumns={2}
         contentContainerClassName="pb-32"
         columnWrapperClassName="flex gap-5 px-5"
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator size="large" className="text-primary-300 mt-5" />
+          ) : (
+            <NoResults />
+          )
+        }
         ListHeaderComponent={
           <View className="px-5">
             <View className="flex flex-row items-center justify-between mt-5">
@@ -51,21 +102,29 @@ export default function Index() {
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              <FlatList
-                data={[3, 4, 5]}
-                renderItem={({ item }) => <FeaturedCards onPress={() => {}} />}
-                keyExtractor={(item) => item.toString()}
-                horizontal
-                bounces={false}
-                showsHorizontalScrollIndicator={false}
-                contentContainerClassName="flex gap-5 mt-5"
-              />
-
-              {/* <View className=" flex flex-row gap-5 mt-5">
-                <FeaturedCards onPress={() => {}} />
-                <FeaturedCards onPress={() => {}} />
-              </View> */}
+              {latestPropertiesLoading ? (
+                <ActivityIndicator
+                  size="large"
+                  className="text-primary-300 mt-5"
+                />
+              ) : !latestProperties || latestProperties.length === 0 ? (
+                <NoResults />
+              ) : (
+                <FlatList
+                  data={latestProperties}
+                  renderItem={({ item }) => (
+                    <FeaturedCards
+                      item={item}
+                      onPress={() => handleCardPress(item.$id)}
+                    />
+                  )}
+                  keyExtractor={(item) => item.toString()}
+                  horizontal
+                  bounces={false}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerClassName="flex gap-5 mt-5"
+                />
+              )}
 
               <View className="flex flex-row items-center justify-between">
                 <Text className="text-xl font-rubik-bold text-black-300">
@@ -79,11 +138,6 @@ export default function Index() {
               </View>
 
               <Filters />
-
-              {/* <View className=" flex flex-row gap-5 mt-5">
-                <Card onPress={() => {}} />
-                <Card onPress={() => {}} />
-              </View> */}
             </View>
           </View>
         }
